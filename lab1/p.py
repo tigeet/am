@@ -1,16 +1,56 @@
+import json
+from pathlib import Path
 import numpy as np
 
-# c = np.array([-1])
-# A = np.array([[-1]])
-# b = np.array([-5])
 
-c = np.array([1, -1])
-A = np.array([[1, 0], [0, -1]])
-b = np.array([5, -5])
+# c = np.array([1, -1])
+# A = np.array([[1, 0], [0, -1]])
+# b = np.array([5, -5])
 
-# c = np.array([7, 6])
-# A = np.array([[2, 4], [3, 2]])
-# b = np.array([16, 12])
+
+def parse_json(content: str):
+    doc = json.loads(content)
+
+    constraints = doc["constraints"]
+    height = len(constraints)
+    width = len(constraints[0]["coefs"])
+
+    print(width, height)
+
+    f = np.array(doc["f"])
+
+    if doc["goal"] == "min":
+        f *= -1
+
+    A = np.empty(0)
+    b = np.empty(0)
+
+    for i, constraint in enumerate(constraints):
+        row_len = len(constraint["coefs"])
+
+        coefs = np.zeros(width)
+        coefs[:row_len] = np.array(constraint["coefs"])
+
+        b = constraint["b"]
+
+        if constraint["type"][0:2] == "gt":
+            b = -b
+            coefs *= -1
+
+        A = np.append(A, coefs)
+        b = np.append(b, b)
+
+    A = np.reshape(A, (height, width))
+    b = np.reshape(b, (1, height))
+
+    return A, b[0], f
+
+
+def from_file(path: Path):
+    file = open(path.absolute(), "r", encoding="utf-8")
+    content = file.read()
+    file.close()
+    return content
 
 
 def make_tableau(A, b, c):
@@ -66,15 +106,7 @@ def get_pivot(tableau):
         return pivot_row, pivot_column
 
 
-def main():
-    # c = np.array([3, 2, 4])
-    # A = np.array([[3, 2, 5], [4, 2, 3], [-2, -1, -1]])
-    # b = np.array([18, 16, -4])
-
-    c = np.array([-3, -4])
-    A = np.array([[-1, -1], [-1, -2], [-5, 1]])
-    b = np.array([-20, -25, 4])
-
+def solve(A, b, c):
     tableau = make_tableau(A, b, c)
 
     height = len(A)
@@ -119,6 +151,13 @@ def main():
         value = tableau[-1, -1]
 
         print(solutions, value)
+
+
+def main():
+    path = Path("./assets/input2.json")
+    content = from_file(path)
+    A, b, c = parse_json(content)
+    solve(A=A, b=b, c=c)
 
 
 main()

@@ -1,0 +1,22 @@
+{
+  "f": [3, 2, 4],
+  "goal": "max",
+  "constraints": [
+    {
+      "coefs": [3, 2, 5],
+      "type": "lte",
+      "b": 18
+    },
+
+    {
+      "coefs": [4, 2, 3],
+      "type": "lte",
+      "b": 16
+    },
+    {
+      "coefs": [2, 1, 1],
+      "type": "gte",
+      "b": 4
+    }
+  ]
+}

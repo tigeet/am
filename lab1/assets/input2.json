@@ -1,0 +1,11 @@
+{
+  "f": [1],
+  "goal": "min",
+  "constraints": [
+    {
+      "coefs": [1],
+      "type": "gte",
+      "b": 5
+    }
+  ]
+}

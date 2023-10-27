@@ -1,0 +1,11 @@
+{
+  "f": [1],
+  "goal": "max",
+  "constraints": [
+    {
+      "coefs": [1],
+      "type": "eq",
+      "b": 5
+    }
+  ]
+}

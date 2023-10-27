@@ -10,12 +10,10 @@ import numpy as np
 
 def parse_json(content: str):
     doc = json.loads(content)
-
+    C = set()
     constraints = doc["constraints"]
     height = len(constraints)
     width = len(constraints[0]["coefs"])
-
-    print(width, height)
 
     f = np.array(doc["f"])
 
@@ -23,7 +21,7 @@ def parse_json(content: str):
         f *= -1
 
     A = np.empty(0)
-    b = np.empty(0)
+    B = np.empty(0)
 
     for i, constraint in enumerate(constraints):
         row_len = len(constraint["coefs"])
@@ -36,14 +34,15 @@ def parse_json(content: str):
         if constraint["type"][0:2] == "gt":
             b = -b
             coefs *= -1
-
+        if constraint["type"][0:2] == "eq":
+            C.add(i)
         A = np.append(A, coefs)
-        b = np.append(b, b)
-
+        B = np.append(B, b)
+    print(b)
     A = np.reshape(A, (height, width))
-    b = np.reshape(b, (1, height))
+    B = np.reshape(B, (1, height))
 
-    return A, b[0], f
+    return A, B[0], f, C
 
 
 def from_file(path: Path):
@@ -53,9 +52,14 @@ def from_file(path: Path):
     return content
 
 
-def make_tableau(A, b, c):
+def make_tableau(A, b, c, C):
     tableau = np.vstack((A, -c))
-    tableau = np.hstack((tableau, np.identity(tableau.shape[0])))
+
+    identity = np.identity(tableau.shape[0])
+    for i, _ in enumerate(identity):
+        if i in C:
+            identity[i][i] = 0
+    tableau = np.hstack((tableau, identity))
     b = np.append(b, 0)
     tableau = np.hstack((tableau, np.atleast_2d(b).T))
 
@@ -106,8 +110,8 @@ def get_pivot(tableau):
         return pivot_row, pivot_column
 
 
-def solve(A, b, c):
-    tableau = make_tableau(A, b, c)
+def solve(A, b, c, C):
+    tableau = make_tableau(A, b, c, C)
 
     height = len(A)
     width = len(c)
@@ -156,8 +160,8 @@ def solve(A, b, c):
 def main():
     path = Path("./assets/input2.json")
     content = from_file(path)
-    A, b, c = parse_json(content)
-    solve(A=A, b=b, c=c)
+    A, b, c, C = parse_json(content)
+    solve(A=A, b=b, c=c, C=C)
 
 
 main()

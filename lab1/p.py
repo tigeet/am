@@ -3,11 +3,6 @@ from pathlib import Path
 import numpy as np
 
 
-# c = np.array([1, -1])
-# A = np.array([[1, 0], [0, -1]])
-# b = np.array([5, -5])
-
-
 def parse_json(content: str):
     doc = json.loads(content)
     C = set()
@@ -38,7 +33,7 @@ def parse_json(content: str):
             C.add(i)
         A = np.append(A, coefs)
         B = np.append(B, b)
-    print(b)
+
     A = np.reshape(A, (height, width))
     B = np.reshape(B, (1, height))
 
@@ -59,23 +54,10 @@ def make_tableau(A, b, c, C):
     for i, _ in enumerate(identity):
         if i in C:
             identity[i][i] = 0
+
     tableau = np.hstack((tableau, identity))
     b = np.append(b, 0)
     tableau = np.hstack((tableau, np.atleast_2d(b).T))
-
-    # width = len(A[0])
-    # tableau = np.hstack((A, np.identity(A.shape[0])))
-
-    # b = np.transpose(b)
-    # tableau = np.hstack((tableau, np.atleast_2d(b).T))
-
-    # # for i, v in enumerate(b):
-    # #     if v < 0:
-    # #         tableau[i] *= -1
-
-    # c *= -1
-    # c = np.append(c, np.zeros(len(tableau[0]) - len(c)))
-    # tableau = np.vstack((tableau, c))
 
     return tableau
 
@@ -88,24 +70,19 @@ def get_pivot(tableau):
                 pivot_row = i
                 break
 
-        pivot_column = 0
         for i, v in enumerate(tableau[pivot_row][:-1]):
             if v < 0:
-                pivot_column = i
+                return pivot_row, i
 
-                break
-        print(pivot_row, pivot_column)
-        return pivot_row, pivot_column
+        return -1, -1
     else:
         height = len(tableau - 1)
         pivot_column = np.argmin(tableau[-1][:-1])
-        # print("pc", pivot_column, tableau[:-1, -1])
         nonneg = [i for i in range(0, height) if tableau[i, pivot_column] > 0]
         if len(nonneg) == 0:
             return None, None
 
         division = [tableau[i][-1] / tableau[i][pivot_column] for i in nonneg]
-        print(division)
         pivot_row = nonneg[division.index(min(division))]
         return pivot_row, pivot_column
 
@@ -119,15 +96,17 @@ def solve(A, b, c, C):
     optimal = False
     feasible = True
 
-    print(tableau, end="\n\n")
-
     while feasible and not optimal:
         # for i in range(5):
         pivot_row, pivot_column = get_pivot(tableau)
         if pivot_column is None:
             feasible = False
+            print("unbounded")
             break
-        print(pivot_row, pivot_column)
+        elif pivot_column == -1:
+            feasible = False
+            print("infeasible")
+            break
 
         tableau[pivot_row] /= tableau[pivot_row][pivot_column]
 
@@ -143,22 +122,25 @@ def solve(A, b, c, C):
         solutions = tableau[:, -1]
 
         optimal = np.all(tableau[-1][:-1] >= 0)
-        print(tableau, end="\n\n")
 
     if optimal:
         solutions = np.zeros(width)
+        has_solution = False
         for i in range(width):
             if sum(tableau[:, i]) != 1:
                 solutions[i] = 0
             else:
+                has_solution = True
                 solutions[i] = tableau[tableau[:, i].argmax(), -1]
         value = tableau[-1, -1]
-
-        print(solutions, value)
+        if has_solution:
+            print(tableau, solutions, value)
+        else:
+            print("infeasible")
 
 
 def main():
-    path = Path("./assets/input2.json")
+    path = Path("./assets/input7.json")
     content = from_file(path)
     A, b, c, C = parse_json(content)
     solve(A=A, b=b, c=c, C=C)

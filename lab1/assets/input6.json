@@ -1,0 +1,16 @@
+{
+  "f": [1],
+  "goal": "max",
+  "constraints": [
+    {
+      "coefs": [1],
+      "type": "gt",
+      "b": 5
+    },
+    {
+      "coefs": [1],
+      "type": "lt",
+      "b": 3
+    }
+  ]
+}

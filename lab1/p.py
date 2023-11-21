@@ -2,6 +2,8 @@ import json
 from pathlib import Path
 import numpy as np
 
+with_log = False
+
 
 def parse_json(content: str):
     doc = json.loads(content)
@@ -11,9 +13,10 @@ def parse_json(content: str):
     width = len(constraints[0]["coefs"])
 
     f = np.array(doc["f"])
-
+    is_min = False
     if doc["goal"] == "min":
         f *= -1
+        is_min = True
 
     A = np.empty(0)
     B = np.empty(0)
@@ -37,7 +40,7 @@ def parse_json(content: str):
     A = np.reshape(A, (height, width))
     B = np.reshape(B, (1, height))
 
-    return A, B[0], f, C
+    return A, B[0], f, C, is_min
 
 
 def from_file(path: Path):
@@ -64,15 +67,29 @@ def make_tableau(A, b, c, C):
 
 def get_pivot(tableau):
     if np.any(tableau[:-1, -1] < 0):
-        pivot_row = 0
+        target_row = 0
         for i, v in enumerate(tableau[:-1, -1]):
             if v < 0:
-                pivot_row = i
+                target_row = i
                 break
 
-        for i, v in enumerate(tableau[pivot_row][:-1]):
+        pivot_col = None
+        for i, v in enumerate(tableau[target_row][:-1]):
             if v < 0:
-                return pivot_row, i
+                pivot_col = i
+                break
+
+        if pivot_col is None:
+            return -1, -1
+
+        f = tableau[:-1, -1] / np.array(
+            [10e-9 if x == 0 else x for x in tableau[:-1, pivot_col]]
+        )
+        f = [v if v > 0 else np.inf for v in f]
+        pivot_row = np.argmin(f)
+        if f[pivot_row] == np.inf:
+            return -1, -1
+        return pivot_row, pivot_col
 
         return -1, -1
     else:
@@ -87,9 +104,11 @@ def get_pivot(tableau):
         return pivot_row, pivot_column
 
 
-def solve(A, b, c, C):
+def solve(A, b, c, C=set(), is_min=False):
     tableau = make_tableau(A, b, c, C)
-
+    if with_log:
+        print(tableau, "\n------")
+    # print(tableau)
     height = len(A)
     width = len(c)
 
@@ -101,11 +120,11 @@ def solve(A, b, c, C):
         pivot_row, pivot_column = get_pivot(tableau)
         if pivot_column is None:
             feasible = False
-            print("unbounded")
+            # print("unbounded")
             break
         elif pivot_column == -1:
             feasible = False
-            print("infeasible")
+            # print("infeasible")
             break
 
         tableau[pivot_row] /= tableau[pivot_row][pivot_column]
@@ -118,10 +137,11 @@ def solve(A, b, c, C):
                 * tableau[pivot_row]
                 / tableau[pivot_row][pivot_column]
             )
-
+        if with_log:
+            print(tableau, "\n------")
         solutions = tableau[:, -1]
 
-        optimal = np.all(tableau[-1][:-1] >= 0)
+        optimal = np.all(tableau[:-1, -1] >= 0) and np.all(tableau[-1][:-1] >= 0)
 
     if optimal:
         solutions = np.zeros(width)
@@ -132,18 +152,28 @@ def solve(A, b, c, C):
             else:
                 has_solution = True
                 solutions[i] = tableau[tableau[:, i].argmax(), -1]
-        value = tableau[-1, -1]
         if has_solution:
-            print(tableau, solutions, value)
-        else:
-            print("infeasible")
+            if with_log:
+                print("Simplex solution:", solutions, value)
+            value = c @ solutions
+            if is_min:
+                value = -value
+            return solutions, value
+    raise "no solution"
 
 
 def main():
-    path = Path("./assets/input7.json")
-    content = from_file(path)
-    A, b, c, C = parse_json(content)
-    solve(A=A, b=b, c=c, C=C)
+    for i in range(1, 8):
+        path = Path(f"./assets/input{i}.json")
+        content = from_file(path)
+        A, b, c, C, is_min = parse_json(content)
+
+        try:
+            solution, value = solve(A=A, b=b, c=c, C=C, is_min=is_min)
+            print(solution, value)
+        except:
+            print("No solution")
 
 
-main()
+if __name__ == "__main__":
+    main()

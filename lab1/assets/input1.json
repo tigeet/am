@@ -1,6 +1,6 @@
 {
-  "f": [-3, -4],
-  "goal": "max",
+  "f": [3, 4],
+  "goal": "min",
   "constraints": [
     {
       "coefs": [1, 1],

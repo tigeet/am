@@ -13,9 +13,10 @@ def parse_json(content: str):
     width = len(constraints[0]["coefs"])
 
     f = np.array(doc["f"])
-
+    is_min = False
     if doc["goal"] == "min":
         f *= -1
+        is_min = True
 
     A = np.empty(0)
     B = np.empty(0)
@@ -39,7 +40,7 @@ def parse_json(content: str):
     A = np.reshape(A, (height, width))
     B = np.reshape(B, (1, height))
 
-    return A, B[0], f, C
+    return A, B[0], f, C, is_min
 
 
 def from_file(path: Path):
@@ -104,7 +105,7 @@ def get_pivot(tableau):
         return pivot_row, pivot_column
 
 
-def solve(A, b, c, C=set()):
+def solve(A, b, c, C=set(), is_min=False):
     tableau = make_tableau(A, b, c, C)
     if with_log:
         print(tableau, "\n------")
@@ -152,10 +153,12 @@ def solve(A, b, c, C=set()):
             else:
                 has_solution = True
                 solutions[i] = tableau[tableau[:, i].argmax(), -1]
-        value = tableau[-1, -1]
         if has_solution:
             if with_log:
                 print("Simplex solution:", solutions, value)
+            value = c @ solutions
+            if is_min:
+                value = -value
             return solutions, value
     raise "no solution"
 
@@ -163,12 +166,29 @@ def solve(A, b, c, C=set()):
 def main():
     # path = Path("./assets/input7.json")
     # content = from_file(path)
-    # A, b, c, C = parse_json(content)
+    # A, b, c, C, is_min = parse_json(content)
+
     A = np.array([[1, 1], [-2, 3]])
     b = np.array([13, -6])
     c = np.array([1, 2])
+
+    is_min = False
+    # A = np.array(
+    #     [
+    #         [
+    #             -1,
+    #             -1,
+    #         ],
+    #         [-1, -2],
+    #         [-5, 1],
+    #     ]
+    # )
+    # b = np.array([-20, -25, 4])
+    # c = np.array([-3, -4])
     C = set([0])
-    solve(A=A, b=b, c=c, C=C)
+    solution, value = solve(A=A, b=b, c=c, C=C, is_min=is_min)
+
+    print(solution, value)
 
 
 if __name__ == "__main__":

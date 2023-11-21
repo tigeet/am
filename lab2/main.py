@@ -140,4 +140,5 @@ def main():
     print(f"Стратегии игрока B = {[str(y) for y in solution_b]}")
 
 
-main()
+if __name__ == "__main__":
+    main()

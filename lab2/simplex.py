@@ -74,7 +74,7 @@ def get_pivot(tableau):
                 break
 
         pivot_col = None
-        for i, v in enumerate(tableau[target_row]):
+        for i, v in enumerate(tableau[target_row][:-1]):
             if v < 0:
                 pivot_col = i
                 break
@@ -82,15 +82,14 @@ def get_pivot(tableau):
         if pivot_col is None:
             return -1, -1
 
-        f = tableau[:-1, -1] / tableau[:-1, pivot_col]
+        f = tableau[:-1, -1] / np.array(
+            [10e-9 if x == 0 else x for x in tableau[:-1, pivot_col]]
+        )
         f = [v if v > 0 else np.inf for v in f]
         pivot_row = np.argmin(f)
         if f[pivot_row] == np.inf:
             return -1, -1
         return pivot_row, pivot_col
-        # for i, v in enumerate(tableau[pivot_row][:-1]):
-        #     if v < 0:
-        #         return pivot_row, i
 
         return -1, -1
     else:
